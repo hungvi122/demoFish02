@@ -4,10 +4,10 @@
     "food" :{
         "maxFood": 30,
         "level": [
-            {"foodMass": 1,"radius": 25,"column": 6,"row": 1, "speed": 3},
-            {"foodMass": 2,"radius": 40,"column": 1,"row": 1, "speed": 3.5},
-            {"foodMass": 3,"radius": 40,"column": 1,"row": 1, "speed": 4},
-            {"foodMass": 4,"radius": 40,"column": 1,"row": 1, "speed": 4.5}
+            {"foodMass": 1,"radius": 25,"column": 6,"row": 1, "speed": 2},
+            {"foodMass": 2,"radius": 40,"column": 1,"row": 1, "speed": 2.5},
+            {"foodMass": 3,"radius": 40,"column": 1,"row": 1, "speed": 3},
+            {"foodMass": 4,"radius": 40,"column": 1,"row": 1, "speed": 3.5}
         ]
     },
     "fireFood": 20,
@@ -58,7 +58,7 @@
     ],
     "sharkFish":{
         "maxSharkFish": 1,
-        "level" :[{"radius": 40, "width": 272, "height": 107 , "column": 3, "row": 1, "speed": 4.5}]
+        "level" :[{"radius": 40, "width": 272, "height": 107 , "column": 3, "row": 1, "speed": 3.5}]
     },
     "direct": {
         "LEFT": 1,
@@ -70,7 +70,7 @@
     "timeAcceleration": 1000,
     "timeSpeed": 1000,
     "timeLevelUp": 3000,
-    "speedPlayer": 8.5,
+    "speedPlayer": 6.5,
     "typeObj": {
         "FOOD" : 0,
         "MASS" : 1,
