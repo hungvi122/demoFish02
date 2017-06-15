@@ -14,7 +14,7 @@
     "limitSplit": 16,
     "defaultPlayerMass": 10,
     "virus": {
-        "radius": 10,
+        "radius": 5,
         "maxVirus": 20,
         "status": {
             "LIVE": 0,
@@ -80,7 +80,7 @@
         "ENEMY": 5,
         "AIBOT": 6
     },
-    "numberBot": 2,
+    "numberBot": 10,
     "BOT":{
         "DANGER": 0,
         "WARN": 1,
