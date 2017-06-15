@@ -392,16 +392,17 @@ function addBoom(player) {
 function addEnemy(toAdd) {
      while (toAdd--) {
         var radius = c.virus.radius;
-        var i = util.randomInRange(0, users.length);
+        var i = util.randomInRange(0, users.length - 1);
         enemies.push({
             id: ((new Date()).getTime() + '' + enemies.length) >>> 0,
-            idTarget: users[i].id,
+            idTarget: i == -1? 0 : users[i].id,
+            typeTarget: "player",
             time: (new Date()).getTime(),
             x: util.randomInRange(0, c.gameWidth),
             y: c.gameHeight + util.randomInRange(0, c.gameWidth)* 0.2,
             target :{
-                x: users[i].x,
-                y: users[i].y
+                x: 0,
+                y: 0
             },
             height: c.sharkFish.level[0].height,
             width: c.sharkFish.level[0].width,
@@ -650,11 +651,11 @@ function balanceMass() {
     if(c.jellyFish.maxJellyFish > jellyFishs.length){
         addJellyFish(c.jellyFish.maxJellyFish - jellyFishs.length);
     }
-    if(users.length > 0){
-        if(c.sharkFish.maxSharkFish > enemies.length){
-            addEnemy(c.sharkFish.maxSharkFish - enemies.length);
-        }
+    //if(users.length > 0){
+    if(c.sharkFish.maxSharkFish > enemies.length){
+        addEnemy(c.sharkFish.maxSharkFish - enemies.length);
     }
+    //}
     if(c.numberBot > bots.length){
         addAIBot(c.numberBot - bots.length);
     }
@@ -812,14 +813,18 @@ io.on('connection', function (socket) {
 
     socket.on('respawn', function () {
         console.log('respawn');
-        if (util.findIndex(users, currentPlayer.id) > -1)
+        if (util.findIndex(users, currentPlayer.id) > -1){
+            users[util.findIndex(users, currentPlayer.id)] = {};
             users.splice(util.findIndex(users, currentPlayer.id), 1);
+        }
         socket.emit('welcome', currentPlayer);
     });
 
     socket.on('disconnect', function () {
-        if (util.findIndex(users, currentPlayer.id) > -1)
+        if (util.findIndex(users, currentPlayer.id) > -1){
+            users[util.findIndex(users, currentPlayer.id)] = {};
             users.splice(util.findIndex(users, currentPlayer.id), 1);
+        }
         console.log('[INFO1] User ' + currentPlayer.name + ' disconnected!');
 
         socket.broadcast.emit('playerDisconnect', { name: currentPlayer.name });
@@ -1032,6 +1037,7 @@ function tickPlayer(currentPlayer) {
         if(checkFishEatCircle(currentPlayer, food[i])){
             currentPlayer.massTotal += food[i].mass;
             currentPlayer.kill ++;
+            food[i] = {};
             food.splice(i, 1);
             i--;
             
@@ -1041,6 +1047,7 @@ function tickPlayer(currentPlayer) {
     for (var i = 0; i < massFood.length; i++) {
         if(checkFishEatCircle(currentPlayer, massFood[i])){
             currentPlayer.massTotal += massFood[i].masa;
+            massFood[i] = {};
             massFood.splice(i, 1);
         }
     }
@@ -1050,6 +1057,7 @@ function tickPlayer(currentPlayer) {
         if(checkFishInCircle(currentPlayer, virus[i])){
             if(currentPlayer.numberBoom.number < 3)
                 currentPlayer.numberBoom.number += 1;
+            virus[i] = {};
             virus.splice(i, 1);        
         }
     }
@@ -1134,6 +1142,7 @@ function tickPlayer(currentPlayer) {
         for (var j = 0; j < booms.length; j++) {
            if(checkFishInCircle(enemies[i], booms[j])){
                 //console.log("BOOOM");
+                enemies[i] = {};
                 enemies.splice(i, 1);
                 booms[j].status = c.virus.status.DIED;
            }
@@ -1146,17 +1155,27 @@ function tickPlayer(currentPlayer) {
                 enemies[i].eatFish.time = new Date().getTime();
                 users[k].living.status = false;
                 var count = -1;
+                pos = -1;
                 for (var i = 0; i < users.length; i++) {
                     if(users[i].living.status){
                         pos = i;
                         break;
                     }
                 }
-                pos = util.randomInRange(0, count);
+                // pos = util.randomInRange(0, count - 1);
                 //console.log(pos);
                 if(pos >= 0){
                     enemies[i].target.x = users[pos].x;
                     enemies[i].target.y = users[pos].y;
+                    enemies[i].typeTarget = "player";
+                }else {
+                    pos = util.randomInRange(0, bots.length- 1);
+                //console.log(pos);
+                if(bots.length > 0){
+                    enemies[i].target.x = bots[pos].x;
+                    enemies[i].target.y = bots[pos].y;
+                    enemies[i].typeTarget = "bot";
+                }
                 }
             }
         }
@@ -1237,8 +1256,9 @@ function moveloop() {
         UpdateSpeedAnimation(users[i]);
         if(users[i].living.status)
             tickPlayer(users[i]);
-        if(users[i].living.status == false  && users[i].living.time + 2000 < new Date().getTime()){
+        if(users[i].living.status == false  && users[i].living.time + 1000 < new Date().getTime()){
             sockets[users[i].id].emit('RIP');
+            users[i] = {};
             users.splice(i, 1);
             i--;
         }
@@ -1247,6 +1267,7 @@ function moveloop() {
         if(bots[i].living.status)
             tickPlayer(bots[i]);
         if(bots[i].living.status == false){
+            bots[i] = {};
             bots.splice(i, 1);
             i--;
         }
@@ -1255,6 +1276,7 @@ function moveloop() {
     for (i=0; i < virus.length; i++) {
         moveFood(virus[i]);
         if(virus[i].y < 0){
+            virus[i] = {};
             virus.splice(i,1);
             i --;
         }
@@ -1614,6 +1636,13 @@ setInterval(sendUpdates, 1000 / c.networkUpdateFactor);
 
 function EnemyStrategy(){
     var pos = 0;
+    // console.log("enemies.length", enemies.length, enemies[0]);
+    var dataUsers = [];
+    for (var i = 0; i < users.length; i++) {
+        if(users[i].living.status){
+            dataUsers.push(users[i]);
+        }
+    }
     for (var i = 0; i < enemies.length; i++) {
         if(enemies[i].isHut)
             continue;
@@ -1621,15 +1650,35 @@ function EnemyStrategy(){
             enemies[i].animation.status = false;
             enemies[i].animation.time = 0;
         }
-        pos = util.findIndex(users, enemies[i].idTarget);
+        if(enemies[i].typeTarget == "player"){
+            pos = util.findIndex(dataUsers, enemies[i].idTarget);
+            //position = {x: users[pos].x, y: users[pos].y};
+        }else if(enemies[i].typeTarget == "bot"){
+            pos = util.findIndex(bots, enemies[i].idTarget);
+            //position = {x: bots[pos].x, y: bots[pos].y};
+        }
+
         if(pos != -1){
-            enemies[i].target.x = users[pos].x;
-            enemies[i].target.y = users[pos].y;
-        }else if(users.length > 0){
+            if(enemies[i].typeTarget == "player"){
+                enemies[i].target.x = users[pos].x;
+                enemies[i].target.y = users[pos].y;
+            }else {
+                enemies[i].target.x = bots[pos].x;
+                enemies[i].target.y = bots[pos].y;
+            }
+        }else if(dataUsers.length > 0){
             pos = util.randomInRange(0, users.length);
-            enemies[i].target.x = users[pos].x;
-            enemies[i].target.y = users[pos].y;
-            enemies[i].idTarget = users[pos].idTarget;
+            enemies[i].target.x = dataUsers[pos].x;
+            enemies[i].target.y = dataUsers[pos].y;
+            enemies[i].idTarget = dataUsers[pos].id;
+            enemies[i].typeTarget = "player";
+        }else if(bots.length > 0){
+            pos = util.randomInRange(0, bots.length - 1);
+            enemies[i].target.x = bots[pos].x;
+            enemies[i].target.y = bots[pos].y;
+            enemies[i].idTarget = bots[pos].id;
+            enemies[i].typeTarget = "bot";
+            console.log("botENEMY");
         }
     
         if(enemies[i].x < enemies[i].target.x){
@@ -1640,6 +1689,7 @@ function EnemyStrategy(){
 
         for (var j = 0; j < booms.length; j++) {
            if(checkFishInCircle(enemies[i], booms[j])){
+                enemies[i] = {};
                 enemies.splice(i, 1);
                 i--;
                 booms[j].status = c.virus.status.DIED;

@@ -80,7 +80,7 @@
         "ENEMY": 5,
         "AIBOT": 6
     },
-    "numberBot": 10,
+    "numberBot": 2,
     "BOT":{
         "DANGER": 0,
         "WARN": 1,
